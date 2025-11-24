@@ -82,7 +82,7 @@ public class InitXlet implements Xlet, UserEventListener
                         console = new PrintStream(new MessagesOutputStream(messages, scene));
                         //InputStream is = getClass().getResourceAsStream("/program.data.bin");
                         //CRunTime.init(is);
-    
+
                         console.println("Hen Loader LP v1.0, based on:");
                         console.println("- GoldHEN 2.4b18.7 by SiSTR0");
                         console.println("- poops code by theflow0");
@@ -112,11 +112,44 @@ public class InitXlet implements Xlet, UserEventListener
                                     } else {
                                         console.println("* X = Poops");
                                     }
-                                    
+                                    console.println("(Auto-selecting in 1 second...)");
+
+                                    long startTime = System.currentTimeMillis();
+                                    long timeout = 1000; // 1 second
+                                    boolean autoSelected = false;
+
                                     while ((c != BUTTON_O || !lapseSupported) && c != BUTTON_X)
                                     {
                                         c = pollInput();
+                                        long currentTime = System.currentTimeMillis();
+                                        if (currentTime - startTime >= timeout && c == 0)
+                                        {
+                                            // Auto-select: lapse when supported, poops for 12.50/12.52
+                                            if (lapseSupported) {
+                                                c = BUTTON_X; // Select Lapse
+                                            } else {
+                                                c = BUTTON_X; // Select Poops (for 12.50/12.52)
+                                            }
+                                            autoSelected = true;
+                                            break;
+                                        }
+                                        if (c == 0) {
+                                            try {
+                                                Thread.sleep(10); // Small sleep to avoid busy waiting
+                                            } catch (InterruptedException e) {
+                                                break;
+                                            }
+                                        }
                                     }
+
+                                    if (autoSelected) {
+                                        if (lapseSupported) {
+                                            console.println("Auto-selected: Lapse");
+                                        } else {
+                                            console.println("Auto-selected: Poops");
+                                        }
+                                    }
+
                                     if (c == BUTTON_X && lapseSupported)
                                     {
                                         int result = org.bdj.external.Lapse.main(console);
