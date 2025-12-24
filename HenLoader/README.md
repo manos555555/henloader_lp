@@ -31,7 +31,7 @@ Improved version of [henloader_lp](https://github.com/lucaslealdev/henloader_lp)
 
 ## 🎮 Supported Firmware
 
-- PlayStation 4: Firmware **≤ 13.00**
+- PlayStation 4: Firmware **≤ 12.52**
 - Based on **Poops exploit** by TheFloW
 
 ## 📦 Download
